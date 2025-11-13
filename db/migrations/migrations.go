@@ -1,0 +1,31 @@
+package migrations
+
+import (
+	"errors"
+	"fmt"
+	"mPR/internal/config"
+
+	"github.com/golang-migrate/migrate/v4"
+	_ "github.com/golang-migrate/migrate/v4/database/postgres"
+	_ "github.com/golang-migrate/migrate/v4/source/file"
+	"go.uber.org/zap"
+)
+
+func Run(cfg config.Database, log *zap.Logger) {
+	dsn := fmt.Sprintf(
+		"postgres://%s:%s@%s:%s/%s?sslmode=%s",
+		cfg.Username, cfg.Password, cfg.Host, cfg.Port, cfg.Name, cfg.Mode,
+	)
+
+	migrations, err := migrate.New("file://db/scripts", dsn)
+	if err != nil {
+		log.Panic("Ошибка запуска миграций", zap.Error(err))
+		return
+	}
+	defer func() { _, _ = migrations.Close() }()
+
+	if err := migrations.Up(); err != nil && !errors.Is(err, migrate.ErrNoChange) {
+		log.Info("Ошибка применения миграций", zap.Error(err))
+		return
+	}
+}

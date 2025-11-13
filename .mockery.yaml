@@ -1,0 +1,10 @@
+with-expecter: true
+dir: "mocks"
+outpkg: mocks
+packages:
+  mPR/internal/pkg/storage/repository:
+    interfaces:
+      Teams:
+      Users:
+      PullRequests:
+      Reviewers:
