@@ -1,22 +1,25 @@
-package teams
+package teams_test
 
 import (
 	"context"
 	"errors"
-	"mPR/internal/custom"
-	"mPR/internal/pkg/storage/models"
-	"mPR/mocks"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"gorm.io/gorm"
+
+	"mPR/internal/custom"
+	"mPR/internal/service/teams"
+	"mPR/internal/storage/models"
+	"mPR/mocks"
 )
 
 func TestAdd_Success(t *testing.T) {
 	mockTeams := mocks.NewMockTeams(t)
 	mockUsers := mocks.NewMockUsers(t)
 
-	service := New(mockTeams, mockUsers)
+	service := teams.New(mockTeams, mockUsers)
 
 	ctx := context.Background()
 	teamName := "team1"
@@ -39,7 +42,7 @@ func TestAdd_TeamExists(t *testing.T) {
 	mockTeams := mocks.NewMockTeams(t)
 	mockUsers := mocks.NewMockUsers(t)
 
-	service := New(mockTeams, mockUsers)
+	service := teams.New(mockTeams, mockUsers)
 
 	ctx := context.Background()
 	teamName := "team1"
@@ -61,7 +64,7 @@ func TestAdd_CreateError(t *testing.T) {
 	mockTeams := mocks.NewMockTeams(t)
 	mockUsers := mocks.NewMockUsers(t)
 
-	service := New(mockTeams, mockUsers)
+	service := teams.New(mockTeams, mockUsers)
 
 	ctx := context.Background()
 	teamName := "team1"
@@ -75,15 +78,15 @@ func TestAdd_CreateError(t *testing.T) {
 
 	err := service.Add(ctx, team, members)
 
-	assert.Error(t, err)
-	assert.Equal(t, "db error", err.Error())
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "db error")
 }
 
 func TestGet_Success(t *testing.T) {
 	mockTeams := mocks.NewMockTeams(t)
 	mockUsers := mocks.NewMockUsers(t)
 
-	service := New(mockTeams, mockUsers)
+	service := teams.New(mockTeams, mockUsers)
 
 	ctx := context.Background()
 	teamName := "team1"
@@ -102,7 +105,7 @@ func TestGet_NotFound(t *testing.T) {
 	mockTeams := mocks.NewMockTeams(t)
 	mockUsers := mocks.NewMockUsers(t)
 
-	service := New(mockTeams, mockUsers)
+	service := teams.New(mockTeams, mockUsers)
 
 	ctx := context.Background()
 	teamName := "nonexistent"
@@ -120,7 +123,7 @@ func TestGet_DBError(t *testing.T) {
 	mockTeams := mocks.NewMockTeams(t)
 	mockUsers := mocks.NewMockUsers(t)
 
-	service := New(mockTeams, mockUsers)
+	service := teams.New(mockTeams, mockUsers)
 
 	ctx := context.Background()
 	teamName := "team1"
@@ -130,6 +133,6 @@ func TestGet_DBError(t *testing.T) {
 	result, err := service.Get(ctx, teamName)
 
 	assert.Error(t, err)
-	assert.Equal(t, "connection error", err.Error())
+	assert.Contains(t, err.Error(), "connection error")
 	assert.Nil(t, result)
 }

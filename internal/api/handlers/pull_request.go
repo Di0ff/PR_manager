@@ -2,15 +2,15 @@ package handlers
 
 import (
 	"errors"
-	"mPR/internal/api/dto"
-	"mPR/internal/api/responses"
-	"mPR/internal/custom"
-	"mPR/internal/pkg/storage/models"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
-	"github.com/google/uuid"
 	"go.uber.org/zap"
+
+	"mPR/internal/api/dto"
+	"mPR/internal/api/responses"
+	"mPR/internal/custom"
+	"mPR/internal/storage/models"
 )
 
 func (api *API) Create(c *gin.Context) {
@@ -22,28 +22,22 @@ func (api *API) Create(c *gin.Context) {
 		return
 	}
 
-	UUID, err := uuid.Parse(input.PullRequestID)
-	if err != nil {
-		api.logger.Warn("неправильный UUID для pr_id",
-			zap.String("id", input.PullRequestID),
-		)
-		c.JSON(http.StatusBadRequest, responses.Error("", "invalid pull_request_id"))
+	if input.PullRequestID == "" {
+		api.logger.Warn("пустой pull_request_id")
+		c.JSON(http.StatusBadRequest, responses.Error("", "pull_request_id is required"))
 		return
 	}
 
-	authorUUID, err := uuid.Parse(input.AuthorID)
-	if err != nil {
-		api.logger.Warn("неправильный UUID для author_id",
-			zap.String("id", input.AuthorID),
-		)
-		c.JSON(http.StatusBadRequest, responses.Error("", "invalid author_id"))
+	if input.AuthorID == "" {
+		api.logger.Warn("пустой author_id")
+		c.JSON(http.StatusBadRequest, responses.Error("", "author_id is required"))
 		return
 	}
 
 	pr := &models.PullRequests{
-		ID:       UUID,
+		ID:       input.PullRequestID,
 		Name:     input.PullRequestName,
-		AuthorID: authorUUID,
+		AuthorID: input.AuthorID,
 		Status:   custom.StatusOpen,
 	}
 
@@ -82,16 +76,13 @@ func (api *API) Merge(c *gin.Context) {
 		return
 	}
 
-	UUID, err := uuid.Parse(input.PRID)
-	if err != nil {
-		api.logger.Warn("неправильный UUID для pr_id",
-			zap.String("id", input.PRID),
-		)
-		c.JSON(http.StatusBadRequest, responses.Error("", "invalid pull_request_id"))
+	if input.PRID == "" {
+		api.logger.Warn("пустой pull_request_id")
+		c.JSON(http.StatusBadRequest, responses.Error("", "pull_request_id is required"))
 		return
 	}
 
-	pr, err := api.services.PullRequests.Merge(c, UUID)
+	pr, err := api.services.PullRequests.Merge(c, input.PRID)
 	if err != nil {
 		if errors.Is(err, custom.ErrNotFound) {
 			c.JSON(http.StatusNotFound,
@@ -119,25 +110,19 @@ func (api *API) Reassign(c *gin.Context) {
 		return
 	}
 
-	UUID, err := uuid.Parse(input.PullRequestID)
-	if err != nil {
-		api.logger.Warn("неправильный UUID для pr_id",
-			zap.String("id", input.PullRequestID),
-		)
-		c.JSON(http.StatusBadRequest, responses.Error("", "invalid pull_request_id"))
+	if input.PullRequestID == "" {
+		api.logger.Warn("пустой pull_request_id")
+		c.JSON(http.StatusBadRequest, responses.Error("", "pull_request_id is required"))
 		return
 	}
 
-	oldUUID, err := uuid.Parse(input.OldUserID)
-	if err != nil {
-		api.logger.Warn("неправильный UUID для old_user_id",
-			zap.String("id", input.OldUserID),
-		)
-		c.JSON(http.StatusBadRequest, responses.Error("", "invalid old_user_id"))
+	if input.OldUserID == "" {
+		api.logger.Warn("пустой old_user_id")
+		c.JSON(http.StatusBadRequest, responses.Error("", "old_user_id is required"))
 		return
 	}
 
-	pr, newReviewerID, err := api.services.PullRequests.Reassign(c, UUID, oldUUID)
+	pr, newReviewerID, err := api.services.PullRequests.Reassign(c, input.PullRequestID, input.OldUserID)
 	if err != nil {
 		if errors.Is(err, custom.ErrNotFound) {
 			c.JSON(http.StatusNotFound,
@@ -176,6 +161,6 @@ func (api *API) Reassign(c *gin.Context) {
 
 	c.JSON(http.StatusOK, gin.H{
 		"pr":          pr,
-		"replaced_by": newReviewerID.String(),
+		"replaced_by": newReviewerID,
 	})
 }

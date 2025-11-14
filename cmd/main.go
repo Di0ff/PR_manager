@@ -4,14 +4,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"mPR/db/migrations"
-	"mPR/internal/api/handlers"
-	"mPR/internal/api/routers"
-	"mPR/internal/config"
-	"mPR/internal/logger"
-	"mPR/internal/pkg/storage/postgres"
-	"mPR/internal/pkg/storage/repository"
-	"mPR/internal/service"
 	"net/http"
 	"os"
 	"os/signal"
@@ -19,6 +11,15 @@ import (
 	"time"
 
 	"go.uber.org/zap"
+
+	"mPR/db/migrations"
+	"mPR/internal/api/handlers"
+	"mPR/internal/api/routers"
+	"mPR/internal/config"
+	"mPR/internal/logger"
+	"mPR/internal/service"
+	"mPR/internal/storage/postgres"
+	"mPR/internal/storage/repository"
 )
 
 func main() {
@@ -32,9 +33,9 @@ func main() {
 	db := postgres.New(cfg.Postgres, log)
 
 	repos := repository.New(db)
-	services := service.New(repos)
+	services := service.New(repos, cfg.App.MaxReviewers)
 	api := handlers.New(log, services)
-	router := routers.Init(api)
+	router := routers.Init(api, cfg.App.AdminToken)
 
 	addr := fmt.Sprintf(":%s", cfg.App.Port)
 	srv := &http.Server{

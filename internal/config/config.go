@@ -1,8 +1,8 @@
 package config
 
 import (
-	"log"
 	"os"
+	"strconv"
 
 	"github.com/joho/godotenv"
 )
@@ -23,8 +23,10 @@ type Database struct {
 }
 
 type Application struct {
-	Port string
-	Env  string
+	Port         string
+	Env          string
+	AdminToken   string
+	MaxReviewers int
 }
 
 type Logger struct {
@@ -32,9 +34,7 @@ type Logger struct {
 }
 
 func Load() *Config {
-	if err := godotenv.Load(); err != nil {
-		log.Println(".env файл не найден, читаем переменные окружения")
-	}
+	_ = godotenv.Load()
 
 	cfg := &Config{
 		Postgres: Database{
@@ -46,8 +46,10 @@ func Load() *Config {
 			Mode:     os.Getenv("DB_MODE"),
 		},
 		App: Application{
-			Port: getEnvOrDefault("APP_PORT", "8080"),
-			Env:  getEnvOrDefault("APP_ENV", "production"),
+			Port:         getEnvOrDefault("APP_PORT", "8080"),
+			Env:          getEnvOrDefault("APP_ENV", "production"),
+			AdminToken:   os.Getenv("ADMIN_TOKEN"),
+			MaxReviewers: getEnvOrDefaultInt("MAX_REVIEWERS", 2),
 		},
 		Log: Logger{
 			Level: getEnvOrDefault("LOG_LEVEL", "info"),
@@ -60,6 +62,15 @@ func Load() *Config {
 func getEnvOrDefault(key, defaultValue string) string {
 	if value := os.Getenv(key); value != "" {
 		return value
+	}
+	return defaultValue
+}
+
+func getEnvOrDefaultInt(key string, defaultValue int) int {
+	if value := os.Getenv(key); value != "" {
+		if intValue, err := strconv.Atoi(value); err == nil {
+			return intValue
+		}
 	}
 	return defaultValue
 }

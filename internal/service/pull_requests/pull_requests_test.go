@@ -1,18 +1,19 @@
-package pullRequests
+package pull_requests_test
 
 import (
 	"context"
 	"errors"
-	"mPR/internal/custom"
-	"mPR/internal/pkg/storage/models"
-	"mPR/mocks"
 	"testing"
 	"time"
 
-	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 	"gorm.io/gorm"
+
+	"mPR/internal/custom"
+	"mPR/internal/service/pull_requests"
+	"mPR/internal/storage/models"
+	"mPR/mocks"
 )
 
 func TestCreate_Success(t *testing.T) {
@@ -20,11 +21,11 @@ func TestCreate_Success(t *testing.T) {
 	mockUsers := mocks.NewMockUsers(t)
 	mockReviewers := mocks.NewMockReviewers(t)
 
-	service := New(mockPR, mockUsers, mockReviewers)
+	service := pull_requests.New(mockPR, mockUsers, mockReviewers, 2)
 
 	ctx := context.Background()
-	prID := uuid.New()
-	authorID := uuid.New()
+	prID := "pr1"
+	authorID := "u1"
 	teamName := "team1"
 
 	pr := &models.PullRequests{
@@ -41,8 +42,8 @@ func TestCreate_Success(t *testing.T) {
 		IsActive: true,
 	}
 
-	reviewer1ID := uuid.New()
-	reviewer2ID := uuid.New()
+	reviewer1ID := "r1"
+	reviewer2ID := "r2"
 	activeUsers := []models.Users{
 		{ID: authorID, Username: "author", IsActive: true, TeamName: &teamName},
 		{ID: reviewer1ID, Username: "reviewer1", IsActive: true, TeamName: &teamName},
@@ -67,11 +68,11 @@ func TestCreate_PRExists(t *testing.T) {
 	mockUsers := mocks.NewMockUsers(t)
 	mockReviewers := mocks.NewMockReviewers(t)
 
-	service := New(mockPR, mockUsers, mockReviewers)
+	service := pull_requests.New(mockPR, mockUsers, mockReviewers, 2)
 
 	ctx := context.Background()
-	prID := uuid.New()
-	authorID := uuid.New()
+	prID := "pr1"
+	authorID := "u1"
 
 	pr := &models.PullRequests{
 		ID:       prID,
@@ -95,11 +96,11 @@ func TestCreate_AuthorNotFound(t *testing.T) {
 	mockUsers := mocks.NewMockUsers(t)
 	mockReviewers := mocks.NewMockReviewers(t)
 
-	service := New(mockPR, mockUsers, mockReviewers)
+	service := pull_requests.New(mockPR, mockUsers, mockReviewers, 2)
 
 	ctx := context.Background()
-	prID := uuid.New()
-	authorID := uuid.New()
+	prID := "pr1"
+	authorID := "u1"
 
 	pr := &models.PullRequests{
 		ID:       prID,
@@ -123,10 +124,10 @@ func TestMerge_Success(t *testing.T) {
 	mockUsers := mocks.NewMockUsers(t)
 	mockReviewers := mocks.NewMockReviewers(t)
 
-	service := New(mockPR, mockUsers, mockReviewers)
+	service := pull_requests.New(mockPR, mockUsers, mockReviewers, 2)
 
 	ctx := context.Background()
-	prID := uuid.New()
+	prID := "pr1"
 
 	pr := &models.PullRequests{
 		ID:     prID,
@@ -152,10 +153,10 @@ func TestMerge_AlreadyMerged(t *testing.T) {
 	mockUsers := mocks.NewMockUsers(t)
 	mockReviewers := mocks.NewMockReviewers(t)
 
-	service := New(mockPR, mockUsers, mockReviewers)
+	service := pull_requests.New(mockPR, mockUsers, mockReviewers, 2)
 
 	ctx := context.Background()
-	prID := uuid.New()
+	prID := "pr1"
 	mergedAt := time.Now()
 
 	pr := &models.PullRequests{
@@ -179,10 +180,10 @@ func TestMerge_PRNotFound(t *testing.T) {
 	mockUsers := mocks.NewMockUsers(t)
 	mockReviewers := mocks.NewMockReviewers(t)
 
-	service := New(mockPR, mockUsers, mockReviewers)
+	service := pull_requests.New(mockPR, mockUsers, mockReviewers, 2)
 
 	ctx := context.Background()
-	prID := uuid.New()
+	prID := "pr1"
 
 	mockPR.On("GetByID", ctx, prID).Return(nil, gorm.ErrRecordNotFound)
 
@@ -198,13 +199,13 @@ func TestReassign_Success(t *testing.T) {
 	mockUsers := mocks.NewMockUsers(t)
 	mockReviewers := mocks.NewMockReviewers(t)
 
-	service := New(mockPR, mockUsers, mockReviewers)
+	service := pull_requests.New(mockPR, mockUsers, mockReviewers, 2)
 
 	ctx := context.Background()
-	prID := uuid.New()
-	oldReviewerID := uuid.New()
-	newReviewerID := uuid.New()
-	authorID := uuid.New()
+	prID := "pr1"
+	oldReviewerID := "r_old"
+	newReviewerID := "r_new"
+	authorID := "u1"
 	teamName := "team1"
 
 	pr := &models.PullRequests{
@@ -236,14 +237,14 @@ func TestReassign_Success(t *testing.T) {
 	mockUsers.On("GetByID", ctx, oldReviewerID).Return(oldReviewer, nil)
 	mockUsers.On("GetActiveByTeam", ctx, teamName).Return(activeUsers, nil)
 	mockReviewers.On("Delete", ctx, prID, oldReviewerID).Return(nil)
-	mockReviewers.On("AddOne", ctx, prID, mock.AnythingOfType("uuid.UUID")).Return(nil)
+	mockReviewers.On("AddOne", ctx, prID, mock.AnythingOfType("string")).Return(nil)
 	mockPR.On("GetByID", ctx, prID).Return(pr, nil).Once()
 
 	result, replacedBy, err := service.Reassign(ctx, prID, oldReviewerID)
 
 	assert.NoError(t, err)
 	assert.NotNil(t, result)
-	assert.NotEqual(t, uuid.Nil, replacedBy)
+	assert.NotEqual(t, "", replacedBy)
 }
 
 func TestReassign_PRMerged(t *testing.T) {
@@ -251,11 +252,11 @@ func TestReassign_PRMerged(t *testing.T) {
 	mockUsers := mocks.NewMockUsers(t)
 	mockReviewers := mocks.NewMockReviewers(t)
 
-	service := New(mockPR, mockUsers, mockReviewers)
+	service := pull_requests.New(mockPR, mockUsers, mockReviewers, 2)
 
 	ctx := context.Background()
-	prID := uuid.New()
-	oldReviewerID := uuid.New()
+	prID := "pr1"
+	oldReviewerID := "r_old"
 
 	pr := &models.PullRequests{
 		ID:     prID,
@@ -270,7 +271,7 @@ func TestReassign_PRMerged(t *testing.T) {
 	assert.Error(t, err)
 	assert.True(t, errors.Is(err, custom.ErrPRMerged))
 	assert.Nil(t, result)
-	assert.Equal(t, uuid.Nil, replacedBy)
+	assert.Equal(t, "", replacedBy)
 }
 
 func TestReassign_NotAssigned(t *testing.T) {
@@ -278,12 +279,12 @@ func TestReassign_NotAssigned(t *testing.T) {
 	mockUsers := mocks.NewMockUsers(t)
 	mockReviewers := mocks.NewMockReviewers(t)
 
-	service := New(mockPR, mockUsers, mockReviewers)
+	service := pull_requests.New(mockPR, mockUsers, mockReviewers, 2)
 
 	ctx := context.Background()
-	prID := uuid.New()
-	oldReviewerID := uuid.New()
-	otherReviewerID := uuid.New()
+	prID := "pr1"
+	oldReviewerID := "r_old"
+	otherReviewerID := "r_other"
 
 	pr := &models.PullRequests{
 		ID:     prID,
@@ -303,7 +304,7 @@ func TestReassign_NotAssigned(t *testing.T) {
 	assert.Error(t, err)
 	assert.True(t, errors.Is(err, custom.ErrNotAssigned))
 	assert.Nil(t, result)
-	assert.Equal(t, uuid.Nil, replacedBy)
+	assert.Equal(t, "", replacedBy)
 }
 
 func TestReassign_NoCandidate(t *testing.T) {
@@ -311,12 +312,12 @@ func TestReassign_NoCandidate(t *testing.T) {
 	mockUsers := mocks.NewMockUsers(t)
 	mockReviewers := mocks.NewMockReviewers(t)
 
-	service := New(mockPR, mockUsers, mockReviewers)
+	service := pull_requests.New(mockPR, mockUsers, mockReviewers, 2)
 
 	ctx := context.Background()
-	prID := uuid.New()
-	oldReviewerID := uuid.New()
-	authorID := uuid.New()
+	prID := "pr1"
+	oldReviewerID := "r_old"
+	authorID := "u1"
 	teamName := "team1"
 
 	pr := &models.PullRequests{
@@ -352,5 +353,5 @@ func TestReassign_NoCandidate(t *testing.T) {
 	assert.Error(t, err)
 	assert.True(t, errors.Is(err, custom.ErrNoCandidate))
 	assert.Nil(t, result)
-	assert.Equal(t, uuid.Nil, replacedBy)
+	assert.Equal(t, "", replacedBy)
 }

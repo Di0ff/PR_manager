@@ -3,11 +3,12 @@ package users
 import (
 	"context"
 	"errors"
-	"mPR/internal/custom"
-	"mPR/internal/pkg/storage/models"
-	"mPR/internal/pkg/storage/repository"
+	"fmt"
+	models2 "mPR/internal/storage/models"
+	"mPR/internal/storage/repository"
 
-	"github.com/google/uuid"
+	"mPR/internal/custom"
+
 	"gorm.io/gorm"
 )
 
@@ -25,38 +26,38 @@ func New(users repository.Users, pullRequests repository.PullRequests, reviewers
 	}
 }
 
-func (s *Service) SetActive(ctx context.Context, userID uuid.UUID, active bool) (*models.Users, error) {
+func (s *Service) SetActive(ctx context.Context, userID string, active bool) (*models2.Users, error) {
 	user, err := s.users.GetByID(ctx, userID)
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return nil, custom.ErrNotFound
 		}
-		return nil, err
+		return nil, fmt.Errorf("get user by ID: %w", err)
 	}
 
 	if err := s.users.UpdateIsActive(ctx, userID, active); err != nil {
-		return nil, err
+		return nil, fmt.Errorf("update user is_active status: %w", err)
 	}
 
 	user.IsActive = active
 	return user, nil
 }
 
-func (s *Service) GetUserReviews(ctx context.Context, userID uuid.UUID) ([]models.PullRequests, error) {
+func (s *Service) GetUserReviews(ctx context.Context, userID string) ([]models2.PullRequests, error) {
 	_, err := s.users.GetByID(ctx, userID)
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return nil, custom.ErrNotFound
 		}
-		return nil, err
+		return nil, fmt.Errorf("get user by ID: %w", err)
 	}
 
 	prIDs, err := s.reviewers.GetPRsByReviewer(ctx, userID)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("get pull requests by reviewer: %w", err)
 	}
 
-	prs := make([]models.PullRequests, 0, len(prIDs))
+	prs := make([]models2.PullRequests, 0, len(prIDs))
 	for _, id := range prIDs {
 		pr, err := s.pullRequests.GetByID(ctx, id)
 		if err == nil {

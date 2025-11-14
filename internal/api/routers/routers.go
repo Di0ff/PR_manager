@@ -1,12 +1,13 @@
 package routers
 
 import (
-	"mPR/internal/api/handlers"
-
 	"github.com/gin-gonic/gin"
+
+	"mPR/internal/api/handlers"
+	"mPR/internal/api/middleware"
 )
 
-func Init(api *handlers.API) *gin.Engine {
+func Init(api *handlers.API, adminToken string) *gin.Engine {
 	router := gin.Default()
 
 	router.GET("/health", api.Health)
@@ -19,7 +20,7 @@ func Init(api *handlers.API) *gin.Engine {
 
 	user := router.Group("/users")
 	{
-		user.POST("/setIsActive", api.SetIsActive)
+		user.POST("/setIsActive", middleware.AdminAuth(adminToken), api.SetIsActive)
 		user.GET("/getReview", api.GetReview)
 	}
 

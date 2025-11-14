@@ -3,11 +3,13 @@ package teams
 import (
 	"context"
 	"errors"
-	"mPR/internal/custom"
-	"mPR/internal/pkg/storage/models"
-	"mPR/internal/pkg/storage/repository"
+	"fmt"
 
 	"gorm.io/gorm"
+
+	"mPR/internal/custom"
+	"mPR/internal/storage/models"
+	"mPR/internal/storage/repository"
 )
 
 type Service struct {
@@ -25,7 +27,7 @@ func New(teams repository.Teams, users repository.Users) *Service {
 func (t *Service) Add(ctx context.Context, team *models.Teams, members []models.Users) error {
 	exist, err := t.teams.GetByName(ctx, team.Name)
 	if err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
-		return err
+		return fmt.Errorf("check team existence: %w", err)
 	}
 
 	if exist != nil {
@@ -33,11 +35,11 @@ func (t *Service) Add(ctx context.Context, team *models.Teams, members []models.
 	}
 
 	if err := t.teams.Create(ctx, team); err != nil {
-		return err
+		return fmt.Errorf("create team: %w", err)
 	}
 
 	if err := t.users.CreateOrUpdate(ctx, team.Name, members); err != nil {
-		return err
+		return fmt.Errorf("create or update team members: %w", err)
 	}
 
 	return nil
@@ -49,7 +51,7 @@ func (t *Service) Get(ctx context.Context, name string) (*models.Teams, error) {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return nil, custom.ErrNotFound
 		}
-		return nil, err
+		return nil, fmt.Errorf("get team by name: %w", err)
 	}
 
 	return team, nil

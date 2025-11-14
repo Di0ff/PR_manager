@@ -2,11 +2,12 @@ package postgres
 
 import (
 	"fmt"
-	"mPR/internal/config"
 
 	"go.uber.org/zap"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
+
+	"mPR/internal/config"
 )
 
 func New(cfg config.Database, log *zap.Logger) *gorm.DB {

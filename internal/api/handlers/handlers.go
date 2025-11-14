@@ -1,10 +1,10 @@
 package handlers
 
 import (
-	"mPR/internal/service"
-
 	"github.com/gin-gonic/gin"
 	"go.uber.org/zap"
+
+	"mPR/internal/service"
 )
 
 type API struct {

@@ -2,10 +2,11 @@ package logger
 
 import (
 	"log"
-	"mPR/internal/config"
 
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
+
+	"mPR/internal/config"
 )
 
 func New(cfg config.Config) *zap.Logger {

@@ -1,14 +1,15 @@
-package users
+package users_test
 
 import (
 	"context"
 	"errors"
-	"mPR/internal/custom"
-	"mPR/internal/pkg/storage/models"
-	"mPR/mocks"
+	models2 "mPR/internal/storage/models"
 	"testing"
 
-	"github.com/google/uuid"
+	"mPR/internal/custom"
+	"mPR/internal/service/users"
+	"mPR/mocks"
+
 	"github.com/stretchr/testify/assert"
 	"gorm.io/gorm"
 )
@@ -18,11 +19,11 @@ func TestSetActive_Success(t *testing.T) {
 	mockPR := mocks.NewMockPullRequests(t)
 	mockReviewers := mocks.NewMockReviewers(t)
 
-	service := New(mockUsers, mockPR, mockReviewers)
+	service := users.New(mockUsers, mockPR, mockReviewers)
 
 	ctx := context.Background()
-	userID := uuid.New()
-	user := &models.Users{
+	userID := "u1"
+	user := &models2.Users{
 		ID:       userID,
 		Username: "testuser",
 		IsActive: false,
@@ -44,10 +45,10 @@ func TestSetActive_UserNotFound(t *testing.T) {
 	mockPR := mocks.NewMockPullRequests(t)
 	mockReviewers := mocks.NewMockReviewers(t)
 
-	service := New(mockUsers, mockPR, mockReviewers)
+	service := users.New(mockUsers, mockPR, mockReviewers)
 
 	ctx := context.Background()
-	userID := uuid.New()
+	userID := "u1"
 
 	mockUsers.On("GetByID", ctx, userID).Return(nil, gorm.ErrRecordNotFound)
 
@@ -63,11 +64,11 @@ func TestSetActive_UpdateError(t *testing.T) {
 	mockPR := mocks.NewMockPullRequests(t)
 	mockReviewers := mocks.NewMockReviewers(t)
 
-	service := New(mockUsers, mockPR, mockReviewers)
+	service := users.New(mockUsers, mockPR, mockReviewers)
 
 	ctx := context.Background()
-	userID := uuid.New()
-	user := &models.Users{
+	userID := "u1"
+	user := &models2.Users{
 		ID:       userID,
 		Username: "testuser",
 		IsActive: false,
@@ -79,7 +80,7 @@ func TestSetActive_UpdateError(t *testing.T) {
 	result, err := service.SetActive(ctx, userID, true)
 
 	assert.Error(t, err)
-	assert.Equal(t, "update failed", err.Error())
+	assert.Contains(t, err.Error(), "update failed")
 	assert.Nil(t, result)
 }
 
@@ -88,26 +89,26 @@ func TestGetUserReviews_Success(t *testing.T) {
 	mockPR := mocks.NewMockPullRequests(t)
 	mockReviewers := mocks.NewMockReviewers(t)
 
-	service := New(mockUsers, mockPR, mockReviewers)
+	service := users.New(mockUsers, mockPR, mockReviewers)
 
 	ctx := context.Background()
-	userID := uuid.New()
-	user := &models.Users{
+	userID := "u1"
+	user := &models2.Users{
 		ID:       userID,
 		Username: "reviewer",
 		IsActive: true,
 	}
 
-	prID1 := uuid.New()
-	prID2 := uuid.New()
-	prIDs := []uuid.UUID{prID1, prID2}
+	prID1 := "pr1"
+	prID2 := "pr2"
+	prIDs := []string{prID1, prID2}
 
-	pr1 := &models.PullRequests{
+	pr1 := &models2.PullRequests{
 		ID:     prID1,
 		Name:   "PR 1",
 		Status: custom.StatusOpen,
 	}
-	pr2 := &models.PullRequests{
+	pr2 := &models2.PullRequests{
 		ID:     prID2,
 		Name:   "PR 2",
 		Status: custom.StatusMerged,
@@ -132,10 +133,10 @@ func TestGetUserReviews_UserNotFound(t *testing.T) {
 	mockPR := mocks.NewMockPullRequests(t)
 	mockReviewers := mocks.NewMockReviewers(t)
 
-	service := New(mockUsers, mockPR, mockReviewers)
+	service := users.New(mockUsers, mockPR, mockReviewers)
 
 	ctx := context.Background()
-	userID := uuid.New()
+	userID := "u1"
 
 	mockUsers.On("GetByID", ctx, userID).Return(nil, gorm.ErrRecordNotFound)
 
@@ -151,18 +152,18 @@ func TestGetUserReviews_NoPRs(t *testing.T) {
 	mockPR := mocks.NewMockPullRequests(t)
 	mockReviewers := mocks.NewMockReviewers(t)
 
-	service := New(mockUsers, mockPR, mockReviewers)
+	service := users.New(mockUsers, mockPR, mockReviewers)
 
 	ctx := context.Background()
-	userID := uuid.New()
-	user := &models.Users{
+	userID := "u1"
+	user := &models2.Users{
 		ID:       userID,
 		Username: "reviewer",
 		IsActive: true,
 	}
 
 	mockUsers.On("GetByID", ctx, userID).Return(user, nil)
-	mockReviewers.On("GetPRsByReviewer", ctx, userID).Return([]uuid.UUID{}, nil)
+	mockReviewers.On("GetPRsByReviewer", ctx, userID).Return([]string{}, nil)
 
 	result, err := service.GetUserReviews(ctx, userID)
 
@@ -176,21 +177,21 @@ func TestGetUserReviews_SkipsMissingPRs(t *testing.T) {
 	mockPR := mocks.NewMockPullRequests(t)
 	mockReviewers := mocks.NewMockReviewers(t)
 
-	service := New(mockUsers, mockPR, mockReviewers)
+	service := users.New(mockUsers, mockPR, mockReviewers)
 
 	ctx := context.Background()
-	userID := uuid.New()
-	user := &models.Users{
+	userID := "u1"
+	user := &models2.Users{
 		ID:       userID,
 		Username: "reviewer",
 		IsActive: true,
 	}
 
-	prID1 := uuid.New()
-	prID2 := uuid.New()
-	prIDs := []uuid.UUID{prID1, prID2}
+	prID1 := "pr1"
+	prID2 := "pr2"
+	prIDs := []string{prID1, prID2}
 
-	pr1 := &models.PullRequests{
+	pr1 := &models2.PullRequests{
 		ID:     prID1,
 		Name:   "PR 1",
 		Status: custom.StatusOpen,

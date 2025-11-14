@@ -1,11 +1,11 @@
-package pullRequests
+package pull_requests
 
 import (
 	"context"
-	"mPR/internal/pkg/storage/models"
 
-	"github.com/google/uuid"
 	"gorm.io/gorm"
+
+	"mPR/internal/storage/models"
 )
 
 type Database struct {
@@ -22,13 +22,12 @@ func (d *Database) Create(ctx context.Context, pr *models.PullRequests) error {
 	return d.db.WithContext(ctx).Create(pr).Error
 }
 
-func (d *Database) GetByID(ctx context.Context, id uuid.UUID) (*models.PullRequests, error) {
+func (d *Database) GetByID(ctx context.Context, id string) (*models.PullRequests, error) {
 	var pr models.PullRequests
 	err := d.db.WithContext(ctx).
 		Preload("Author").
 		Preload("Reviewers").
 		First(&pr, "pr_id = ?", id).Error
-
 	if err != nil {
 		return nil, err
 	}
@@ -44,7 +43,7 @@ func (d *Database) AddReviewers(ctx context.Context, reviewers []models.Reviewer
 	return d.db.WithContext(ctx).Create(&reviewers).Error
 }
 
-func (d *Database) GetReviewers(ctx context.Context, prID uuid.UUID) ([]models.Reviewers, error) {
+func (d *Database) GetReviewers(ctx context.Context, prID string) ([]models.Reviewers, error) {
 	var list []models.Reviewers
 	err := d.db.WithContext(ctx).
 		Where("pr_id = ?", prID).
@@ -53,11 +52,10 @@ func (d *Database) GetReviewers(ctx context.Context, prID uuid.UUID) ([]models.R
 	return list, err
 }
 
-func (d *Database) ReplaceReviewer(ctx context.Context, prID uuid.UUID, oldID, newID uuid.UUID) error {
+func (d *Database) ReplaceReviewer(ctx context.Context, prID string, oldID, newID string) error {
 	err := d.db.WithContext(ctx).
 		Where("pr_id = ? AND reviewer_id = ?", prID, oldID).
 		Delete(&models.Reviewers{}).Error
-
 	if err != nil {
 		return err
 	}
@@ -69,7 +67,7 @@ func (d *Database) ReplaceReviewer(ctx context.Context, prID uuid.UUID, oldID, n
 		}).Error
 }
 
-func (d *Database) GetByReviewer(ctx context.Context, reviewerID uuid.UUID) ([]models.PullRequests, error) {
+func (d *Database) GetByReviewer(ctx context.Context, reviewerID string) ([]models.PullRequests, error) {
 	var prs []models.PullRequests
 	err := d.db.WithContext(ctx).
 		Joins("JOIN pr_reviewers r ON r.pr_id = pull_requests.pr_id").

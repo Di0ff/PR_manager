@@ -2,11 +2,11 @@ package users
 
 import (
 	"context"
-	"mPR/internal/pkg/storage/models"
 
-	"github.com/google/uuid"
 	"gorm.io/gorm"
 	"gorm.io/gorm/clause"
+
+	"mPR/internal/storage/models"
 )
 
 type Database struct {
@@ -19,7 +19,7 @@ func New(db *gorm.DB) *Database {
 	}
 }
 
-func (d *Database) GetByID(ctx context.Context, id uuid.UUID) (*models.Users, error) {
+func (d *Database) GetByID(ctx context.Context, id string) (*models.Users, error) {
 	var user models.Users
 	if err := d.db.WithContext(ctx).
 		First(&user, "user_id = ?", id).Error; err != nil {
@@ -40,13 +40,12 @@ func (d *Database) GetActiveByTeam(ctx context.Context, team string) ([]models.U
 	return users, nil
 }
 
-func (d *Database) UpdateIsActive(ctx context.Context, id uuid.UUID, active bool) error {
+func (d *Database) UpdateIsActive(ctx context.Context, id string, active bool) error {
 	if err := d.db.WithContext(ctx).
 		Model(&models.Users{}).
 		Where("user_id = ?", id).
 		Update("is_active", active).
 		Error; err != nil {
-
 		return err
 	}
 
@@ -64,7 +63,6 @@ func (d *Database) CreateOrUpdate(ctx context.Context, teamName string, members 
 			DoUpdates: clause.AssignmentColumns([]string{"username", "team_name", "is_active"}),
 		}).
 		Create(&members).Error; err != nil {
-
 		return err
 	}
 

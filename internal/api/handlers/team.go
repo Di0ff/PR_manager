@@ -2,15 +2,15 @@ package handlers
 
 import (
 	"errors"
-	"mPR/internal/api/dto"
-	"mPR/internal/api/responses"
-	"mPR/internal/custom"
-	"mPR/internal/pkg/storage/models"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
-	"github.com/google/uuid"
 	"go.uber.org/zap"
+
+	"mPR/internal/api/dto"
+	"mPR/internal/api/responses"
+	"mPR/internal/custom"
+	"mPR/internal/storage/models"
 )
 
 func (api *API) AddTeam(c *gin.Context) {
@@ -23,17 +23,14 @@ func (api *API) AddTeam(c *gin.Context) {
 
 	users := make([]models.Users, 0, len(input.Members))
 	for _, m := range input.Members {
-		UUID, err := uuid.Parse(m.UserID)
-		if err != nil {
-			api.logger.Warn("неправильный UUID для member.user_id",
-				zap.String("user_id", m.UserID),
-			)
-			c.JSON(http.StatusBadRequest, responses.Error("", "invalid user_id: must be UUID"))
+		if m.UserID == "" {
+			api.logger.Warn("пустой user_id у member")
+			c.JSON(http.StatusBadRequest, responses.Error("", "user_id is required"))
 			return
 		}
 
 		users = append(users, models.Users{
-			ID:       UUID,
+			ID:       m.UserID,
 			Username: m.Username,
 			IsActive: m.IsActive,
 			TeamName: &input.TeamName,
@@ -56,6 +53,7 @@ func (api *API) AddTeam(c *gin.Context) {
 		return
 	}
 
+	team.Users = users
 	c.JSON(http.StatusCreated, gin.H{"team": team})
 }
 

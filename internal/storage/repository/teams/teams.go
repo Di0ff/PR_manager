@@ -2,9 +2,10 @@ package teams
 
 import (
 	"context"
-	"mPR/internal/pkg/storage/models"
 
 	"gorm.io/gorm"
+
+	"mPR/internal/storage/models"
 )
 
 type Database struct {

@@ -1,0 +1,70 @@
+run:
+  timeout: 5m
+  go: '1.24'
+  tests: true
+
+output:
+  formats:
+    - format: colored-line-number
+  print-issued-lines: true
+  print-linter-name: true
+
+linters:
+  enable:
+    - errcheck      # Проверка необработанных ошибок
+    - govet         # Стандартный go vet
+    - ineffassign   # Неиспользуемые присваивания
+    - staticcheck   # Статический анализ
+    - unused        # Неиспользуемый код
+    - misspell      # Опечатки
+    - revive        # Линтер для стиля кода
+    - gosec         # Проверка безопасности
+    - bodyclose     # Закрытие HTTP body
+
+linters-settings:
+  errcheck:
+    check-type-assertions: false
+    check-blank: false
+    exclude-functions:
+      - (*database/sql.DB).Close
+      - (*database/sql.Rows).Close
+
+  revive:
+    rules:
+      - name: blank-imports
+        disabled: true
+      - name: exported
+        disabled: false
+        arguments:
+          - checkPrivateReceivers
+          - sayRepetitiveInsteadOfStutters
+
+  gosec:
+    excludes:
+      - G404  # Use of weak random number generator (math/rand)
+
+issues:
+  exclude-dirs:
+    - vendor
+    - mocks
+    - bin
+
+  exclude-rules:
+    # Исключаем файлы миграций
+    - path: db/scripts
+      linters:
+        - all
+
+    # Исключаем моки
+    - path: mocks/
+      linters:
+        - all
+
+    # Исключаем тесты от некоторых линтеров
+    - path: _test\.go
+      linters:
+        - errcheck
+        - gosec
+
+  max-issues-per-linter: 0
+  max-same-issues: 0

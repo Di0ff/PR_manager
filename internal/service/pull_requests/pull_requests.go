@@ -1,36 +1,39 @@
-package pullRequests
+package pull_requests
 
 import (
 	"context"
 	"errors"
-	"mPR/internal/custom"
-	"mPR/internal/pkg/storage/models"
-	"mPR/internal/pkg/storage/repository"
+	"fmt"
 	"math/rand"
 	"time"
 
-	"github.com/google/uuid"
 	"gorm.io/gorm"
+
+	"mPR/internal/custom"
+	"mPR/internal/storage/models"
+	"mPR/internal/storage/repository"
 )
 
 type Service struct {
 	pullRequests repository.PullRequests
 	users        repository.Users
 	reviewers    repository.Reviewers
+	maxReviewers int
 }
 
-func New(pullRequests repository.PullRequests, users repository.Users, reviewers repository.Reviewers) *Service {
+func New(pullRequests repository.PullRequests, users repository.Users, reviewers repository.Reviewers, maxReviewers int) *Service {
 	return &Service{
 		pullRequests: pullRequests,
 		users:        users,
 		reviewers:    reviewers,
+		maxReviewers: maxReviewers,
 	}
 }
 
 func (s *Service) Create(ctx context.Context, pr *models.PullRequests) (*models.PullRequests, error) {
 	exist, err := s.pullRequests.GetByID(ctx, pr.ID)
 	if err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
-		return nil, err
+		return nil, fmt.Errorf("check PR existence: %w", err)
 	}
 
 	if exist != nil {
@@ -42,7 +45,7 @@ func (s *Service) Create(ctx context.Context, pr *models.PullRequests) (*models.
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return nil, custom.ErrNotFound
 		}
-		return nil, err
+		return nil, fmt.Errorf("get author by ID: %w", err)
 	}
 
 	selected, err := s.selectReviewers(ctx, author)
@@ -51,7 +54,7 @@ func (s *Service) Create(ctx context.Context, pr *models.PullRequests) (*models.
 	}
 
 	if err := s.pullRequests.Create(ctx, pr); err != nil {
-		return nil, err
+		return nil, fmt.Errorf("create pull request: %w", err)
 	}
 
 	for i := range selected {
@@ -59,8 +62,11 @@ func (s *Service) Create(ctx context.Context, pr *models.PullRequests) (*models.
 	}
 
 	if err := s.reviewers.Add(ctx, selected); err != nil {
-		return nil, err
+		return nil, fmt.Errorf("add reviewers: %w", err)
 	}
+
+	pr.Author = *author
+	pr.Reviewers = selected
 
 	return pr, nil
 }
@@ -72,7 +78,7 @@ func (s *Service) selectReviewers(ctx context.Context, author *models.Users) ([]
 
 	users, err := s.users.GetActiveByTeam(ctx, *author.TeamName)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("get active users by team: %w", err)
 	}
 
 	filtered := make([]models.Users, 0, len(users))
@@ -90,8 +96,8 @@ func (s *Service) selectReviewers(ctx context.Context, author *models.Users) ([]
 		filtered[i], filtered[j] = filtered[j], filtered[i]
 	})
 
-	limit := 2
-	if len(filtered) < 2 {
+	limit := s.maxReviewers
+	if len(filtered) < s.maxReviewers {
 		limit = len(filtered)
 	}
 
@@ -105,13 +111,13 @@ func (s *Service) selectReviewers(ctx context.Context, author *models.Users) ([]
 	return result, nil
 }
 
-func (s *Service) Merge(ctx context.Context, prID uuid.UUID) (*models.PullRequests, error) {
+func (s *Service) Merge(ctx context.Context, prID string) (*models.PullRequests, error) {
 	pr, err := s.pullRequests.GetByID(ctx, prID)
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return nil, custom.ErrNotFound
 		}
-		return nil, err
+		return nil, fmt.Errorf("get pull request for merge: %w", err)
 	}
 
 	if pr.Status == custom.StatusMerged {
@@ -123,28 +129,28 @@ func (s *Service) Merge(ctx context.Context, prID uuid.UUID) (*models.PullReques
 	pr.MergedAt = &now
 
 	if err := s.pullRequests.Update(ctx, pr); err != nil {
-		return nil, err
+		return nil, fmt.Errorf("update pull request status: %w", err)
 	}
 
 	return pr, nil
 }
 
-func (s *Service) Reassign(ctx context.Context, prID, oldID uuid.UUID) (*models.PullRequests, uuid.UUID, error) {
+func (s *Service) Reassign(ctx context.Context, prID, oldID string) (*models.PullRequests, string, error) {
 	pr, err := s.pullRequests.GetByID(ctx, prID)
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return nil, uuid.Nil, custom.ErrNotFound
+			return nil, "", custom.ErrNotFound
 		}
-		return nil, uuid.Nil, err
+		return nil, "", fmt.Errorf("get pull request for reassign: %w", err)
 	}
 
 	if pr.Status == custom.StatusMerged {
-		return nil, uuid.Nil, custom.ErrPRMerged
+		return nil, "", custom.ErrPRMerged
 	}
 
 	reviewers, err := s.reviewers.GetByPR(ctx, prID)
 	if err != nil {
-		return nil, uuid.Nil, err
+		return nil, "", fmt.Errorf("get reviewers by PR: %w", err)
 	}
 
 	isAssigned := false
@@ -155,27 +161,27 @@ func (s *Service) Reassign(ctx context.Context, prID, oldID uuid.UUID) (*models.
 		}
 	}
 	if !isAssigned {
-		return nil, uuid.Nil, custom.ErrNotAssigned
+		return nil, "", custom.ErrNotAssigned
 	}
 
 	oldUser, err := s.users.GetByID(ctx, oldID)
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return nil, uuid.Nil, custom.ErrNotFound
+			return nil, "", custom.ErrNotFound
 		}
-		return nil, uuid.Nil, err
+		return nil, "", fmt.Errorf("get old reviewer user: %w", err)
 	}
 
 	if oldUser.TeamName == nil {
-		return nil, uuid.Nil, custom.ErrNoCandidate
+		return nil, "", custom.ErrNoCandidate
 	}
 
 	candidates, err := s.users.GetActiveByTeam(ctx, *oldUser.TeamName)
 	if err != nil {
-		return nil, uuid.Nil, err
+		return nil, "", fmt.Errorf("get active team members: %w", err)
 	}
 
-	used := map[uuid.UUID]struct{}{
+	used := map[string]struct{}{
 		oldID:       {},
 		pr.AuthorID: {},
 	}
@@ -192,7 +198,7 @@ func (s *Service) Reassign(ctx context.Context, prID, oldID uuid.UUID) (*models.
 	}
 
 	if len(free) == 0 {
-		return nil, uuid.Nil, custom.ErrNoCandidate
+		return nil, "", custom.ErrNoCandidate
 	}
 
 	rand.Shuffle(len(free), func(i, j int) {
@@ -202,15 +208,15 @@ func (s *Service) Reassign(ctx context.Context, prID, oldID uuid.UUID) (*models.
 	newReviewer := free[0].ID
 
 	if err := s.reviewers.Delete(ctx, prID, oldID); err != nil {
-		return nil, uuid.Nil, err
+		return nil, "", fmt.Errorf("delete old reviewer: %w", err)
 	}
 	if err := s.reviewers.AddOne(ctx, prID, newReviewer); err != nil {
-		return nil, uuid.Nil, err
+		return nil, "", fmt.Errorf("add new reviewer: %w", err)
 	}
 
 	updatedPR, err := s.pullRequests.GetByID(ctx, prID)
 	if err != nil {
-		return nil, uuid.Nil, err
+		return nil, "", fmt.Errorf("get updated pull request: %w", err)
 	}
 
 	return updatedPR, newReviewer, nil

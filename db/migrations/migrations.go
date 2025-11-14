@@ -3,12 +3,13 @@ package migrations
 import (
 	"errors"
 	"fmt"
-	"mPR/internal/config"
 
 	"github.com/golang-migrate/migrate/v4"
 	_ "github.com/golang-migrate/migrate/v4/database/postgres"
 	_ "github.com/golang-migrate/migrate/v4/source/file"
 	"go.uber.org/zap"
+
+	"mPR/internal/config"
 )
 
 func Run(cfg config.Database, log *zap.Logger) {

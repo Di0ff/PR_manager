@@ -1,0 +1,50 @@
+services:
+  db_e2e:
+    image: postgres:16
+    container_name: pr-service-db-e2e
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres_e2e
+      POSTGRES_DB: managerPR_e2e
+    ports:
+      - "5433:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 1s
+      timeout: 3s
+      retries: 10
+
+  api_e2e:
+    build: .
+    container_name: pr-service-e2e
+    depends_on:
+      db_e2e:
+        condition: service_healthy
+    ports:
+      - "8081:8080"
+    env_file:
+      - .env.e2e
+    command: ["/app/server"]
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
+      interval: 2s
+      timeout: 3s
+      retries: 15
+
+  tests:
+    build:
+      context: ./e2e_tests
+      dockerfile: Dockerfile
+    container_name: pr-service-tests
+    depends_on:
+      api_e2e:
+        condition: service_healthy
+    environment:
+      API_URL: http://api_e2e:8080
+      ADMIN_TOKEN: test-admin-secret-token
+    networks:
+      - default
+
+networks:
+  default:
+    driver: bridge
