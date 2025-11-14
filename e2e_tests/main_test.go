@@ -28,7 +28,7 @@ func TestMain(m *testing.M) {
 
 	adminToken = os.Getenv("ADMIN_TOKEN")
 	if adminToken == "" {
-		adminToken = "test-admin-secret-token"
+		adminToken = "test-token"
 	}
 
 	client = &http.Client{Timeout: 10 * time.Second}
@@ -79,20 +79,20 @@ func TestBusinessLogic_PRCreation_AutoAssignsReviewers(t *testing.T) {
 
 	pr := prResp["pr"].(map[string]interface{})
 
-	assert.Equal(t, "pr-1001", pr["pull_request_id"], "ID должен совпадать")
-	assert.Equal(t, "OPEN", pr["status"], "Новый PR должен быть OPEN")
-	assert.Equal(t, "u1", pr["author_id"], "Автор должен совпадать")
+	assert.Equal(t, "pr-1001", pr["pull_request_id"], "Wrong ID")
+	assert.Equal(t, "OPEN", pr["status"], "Error new PR close OPEN")
+	assert.Equal(t, "u1", pr["author_id"], "Author wrong")
 
 	reviewers, ok := pr["assigned_reviewers"].([]interface{})
-	require.True(t, ok, "assigned_reviewers должен быть массивом")
-	assert.LessOrEqual(t, len(reviewers), 2, "Не более 2 ревьюверов")
-	assert.Greater(t, len(reviewers), 0, "Минимум 1 ревьювер должен быть назначен")
+	require.True(t, ok, "assigned_reviewers error type (correct slice)")
+	assert.LessOrEqual(t, len(reviewers), 2, "Reviewers > 2")
+	assert.Greater(t, len(reviewers), 0, "Minimum 1 reviewer")
 
 	for _, r := range reviewers {
-		assert.NotEqual(t, "u1", r.(string), "Автор не может быть ревьювером")
+		assert.NotEqual(t, "u1", r.(string), "Author can't be reviewer")
 	}
 
-	assert.NotNil(t, pr["createdAt"], "Должно быть поле createdAt в camelCase")
+	assert.NotNil(t, pr["createdAt"], "Wrong createdAt in camelCase")
 }
 
 func TestBusinessLogic_PRMerge_StateTransition(t *testing.T) {
@@ -117,8 +117,8 @@ func TestBusinessLogic_PRMerge_StateTransition(t *testing.T) {
 	mergeResp := mergePR(t, "pr-2001")
 	mergedPR := mergeResp["pr"].(map[string]interface{})
 
-	assert.Equal(t, "MERGED", mergedPR["status"], "Статус должен измениться на MERGED")
-	assert.NotNil(t, mergedPR["mergedAt"], "Должна быть дата мержа")
+	assert.Equal(t, "MERGED", mergedPR["status"], "Error change status: correct MERGED")
+	assert.NotNil(t, mergedPR["mergedAt"], "Missing date")
 
 	reviewers := pr["assigned_reviewers"].([]interface{})
 	if len(reviewers) > 0 {
@@ -129,12 +129,12 @@ func TestBusinessLogic_PRMerge_StateTransition(t *testing.T) {
 			"old_user_id":     firstReviewer,
 		}, nil)
 
-		assert.Equal(t, http.StatusConflict, resp.StatusCode, "Должна быть ошибка 409")
+		assert.Equal(t, http.StatusConflict, resp.StatusCode, "Wrong code error: correct 409")
 
 		var errorResp map[string]interface{}
 		json.Unmarshal([]byte(body), &errorResp)
 		errorObj := errorResp["error"].(map[string]interface{})
-		assert.Equal(t, "PR_MERGED", errorObj["code"], "Должен быть код PR_MERGED")
+		assert.Equal(t, "PR_MERGED", errorObj["code"], "Wrong: correct PR_MERGED")
 	}
 }
 
@@ -158,11 +158,11 @@ func TestBusinessLogic_InactiveUser_NotAssignedAsReviewer(t *testing.T) {
 	reviewers := pr["assigned_reviewers"].([]interface{})
 
 	for _, r := range reviewers {
-		assert.NotEqual(t, "d2", r.(string), "Неактивный пользователь d2 не должен быть назначен")
+		assert.NotEqual(t, "d2", r.(string), "Inactive user d2")
 	}
 
 	if len(reviewers) > 0 {
-		assert.Equal(t, "d3", reviewers[0].(string), "Должен быть назначен только d3")
+		assert.Equal(t, "d3", reviewers[0].(string), "Wrong: correct d3")
 	}
 }
 
@@ -185,15 +185,15 @@ func TestBusinessLogic_ReassignReviewer_SelectsValidCandidate(t *testing.T) {
 
 	pr := prResp["pr"].(map[string]interface{})
 	reviewers := pr["assigned_reviewers"].([]interface{})
-	require.Greater(t, len(reviewers), 0, "Должен быть хотя бы один ревьювер")
+	require.Greater(t, len(reviewers), 0, "Wrong number of reviewers")
 
 	oldReviewer := reviewers[0].(string)
 
 	reassignResp := reassignReviewer(t, "pr-4001", oldReviewer)
 
 	newReviewer := reassignResp["replaced_by"].(string)
-	assert.NotEqual(t, oldReviewer, newReviewer, "Новый ревьювер должен отличаться")
-	assert.NotEqual(t, "m1", newReviewer, "Автор не может стать ревьювером")
+	assert.NotEqual(t, oldReviewer, newReviewer, "New reassigned reviewer")
+	assert.NotEqual(t, "m1", newReviewer, "Author can't be reviewer")
 
 	updatedPR := reassignResp["pr"].(map[string]interface{})
 	updatedReviewers := updatedPR["assigned_reviewers"].([]interface{})
@@ -205,7 +205,7 @@ func TestBusinessLogic_ReassignReviewer_SelectsValidCandidate(t *testing.T) {
 			break
 		}
 	}
-	assert.True(t, found, "Новый ревьювер должен быть в списке assigned_reviewers")
+	assert.True(t, found, "New reviewer must be in list assigned_reviewers")
 }
 
 func TestBusinessLogic_SetIsActive_RequiresAuth(t *testing.T) {
@@ -221,7 +221,7 @@ func TestBusinessLogic_SetIsActive_RequiresAuth(t *testing.T) {
 		"is_active": false,
 	}, nil)
 
-	assert.Equal(t, http.StatusUnauthorized, resp.StatusCode, "Без токена должна быть ошибка 401")
+	assert.Equal(t, http.StatusUnauthorized, resp.StatusCode, "Don`t have token: correct 401")
 	assert.Contains(t, body, "UNAUTHORIZED")
 
 	headers := map[string]string{"Authorization": "Bearer wrong-token"}
@@ -230,7 +230,7 @@ func TestBusinessLogic_SetIsActive_RequiresAuth(t *testing.T) {
 		"is_active": false,
 	}, headers)
 
-	assert.Equal(t, http.StatusUnauthorized, resp.StatusCode, "С неверным токеном должна быть ошибка 401")
+	assert.Equal(t, http.StatusUnauthorized, resp.StatusCode, "Wrong token: correct 401")
 
 	headers = map[string]string{"Authorization": "Bearer " + adminToken}
 	resp, body = makeRequest(t, "POST", "/users/setIsActive", map[string]interface{}{
@@ -238,12 +238,12 @@ func TestBusinessLogic_SetIsActive_RequiresAuth(t *testing.T) {
 		"is_active": false,
 	}, headers)
 
-	assert.Equal(t, http.StatusOK, resp.StatusCode, "С правильным токеном должно быть 200")
+	assert.Equal(t, http.StatusOK, resp.StatusCode, "if token correct: correct 200")
 
 	var userResp map[string]interface{}
 	json.Unmarshal([]byte(body), &userResp)
 	user := userResp["user"].(map[string]interface{})
-	assert.Equal(t, false, user["is_active"], "Пользователь должен быть деактивирован")
+	assert.Equal(t, false, user["is_active"], "User -> inactive")
 }
 
 func createTeam(t *testing.T, data map[string]interface{}) map[string]interface{} {

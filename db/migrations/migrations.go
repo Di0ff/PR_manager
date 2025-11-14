@@ -20,13 +20,13 @@ func Run(cfg config.Database, log *zap.Logger) {
 
 	migrations, err := migrate.New("file://db/scripts", dsn)
 	if err != nil {
-		log.Panic("Ошибка запуска миграций", zap.Error(err))
+		log.Panic("Error run migrations", zap.Error(err))
 		return
 	}
 	defer func() { _, _ = migrations.Close() }()
 
 	if err := migrations.Up(); err != nil && !errors.Is(err, migrate.ErrNoChange) {
-		log.Info("Ошибка применения миграций", zap.Error(err))
+		log.Info("Error application migrations", zap.Error(err))
 		return
 	}
 }

@@ -46,9 +46,9 @@
   cp .env.example .env
 ```
 
-3. Запустить сервисы:
+3. Запустить сервис:
 ```bash
-  docker-compose up -d
+  docker-compose up --build
 ```
 
 API будет доступен по адресу: `http://localhost:8080`
@@ -88,7 +88,7 @@ API будет доступен по адресу: `http://localhost:8080`
 ```bash
   curl -X POST http://localhost:8080/users/setIsActive \
     -H "Content-Type: application/json" \
-    -H "Authorization: Bearer your_secret_admin_token_here" \
+    -H "Authorization: Bearer secret_token" \
     -d '{
       "user_id": "u2",
       "is_active": false
@@ -159,11 +159,6 @@ API будет доступен по адресу: `http://localhost:8080`
 ### E2E тесты
 ```bash
   make test-e2e
-```
-
-### Все тесты с покрытием
-```bash
-  make test
 ```
 
 ### Линтинг

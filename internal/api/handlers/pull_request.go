@@ -17,19 +17,19 @@ func (api *API) Create(c *gin.Context) {
 	var input dto.CreatePR
 
 	if err := c.ShouldBindJSON(&input); err != nil {
-		api.logger.Warn("неправильный json для Create", zap.Error(err))
+		api.logger.Warn("Wrong json for Create", zap.Error(err))
 		c.JSON(http.StatusBadRequest, responses.Error("", "invalid JSON"))
 		return
 	}
 
 	if input.PullRequestID == "" {
-		api.logger.Warn("пустой pull_request_id")
+		api.logger.Warn("Empty pull_request_id")
 		c.JSON(http.StatusBadRequest, responses.Error("", "pull_request_id is required"))
 		return
 	}
 
 	if input.AuthorID == "" {
-		api.logger.Warn("пустой author_id")
+		api.logger.Warn("Empty author_id")
 		c.JSON(http.StatusBadRequest, responses.Error("", "author_id is required"))
 		return
 	}
@@ -57,7 +57,7 @@ func (api *API) Create(c *gin.Context) {
 			return
 		}
 
-		api.logger.Error("ошибка создания PR", zap.Error(err))
+		api.logger.Error("Error create PR", zap.Error(err))
 		c.JSON(http.StatusInternalServerError,
 			responses.Error("", "internal server error"),
 		)
@@ -71,13 +71,13 @@ func (api *API) Merge(c *gin.Context) {
 	var input dto.Merge
 
 	if err := c.ShouldBindJSON(&input); err != nil {
-		api.logger.Warn("неправильный json для Merge", zap.Error(err))
+		api.logger.Warn("Wrong json for Merge", zap.Error(err))
 		c.JSON(http.StatusBadRequest, responses.Error("", "invalid JSON"))
 		return
 	}
 
 	if input.PRID == "" {
-		api.logger.Warn("пустой pull_request_id")
+		api.logger.Warn("Empty pull_request_id")
 		c.JSON(http.StatusBadRequest, responses.Error("", "pull_request_id is required"))
 		return
 	}
@@ -91,7 +91,7 @@ func (api *API) Merge(c *gin.Context) {
 			return
 		}
 
-		api.logger.Error("ошибка merge PR", zap.Error(err))
+		api.logger.Error("Error merge PR", zap.Error(err))
 		c.JSON(http.StatusInternalServerError,
 			responses.Error("", "internal server error"),
 		)
@@ -105,19 +105,19 @@ func (api *API) Reassign(c *gin.Context) {
 	var input dto.ReassignRequest
 
 	if err := c.ShouldBindJSON(&input); err != nil {
-		api.logger.Warn("неправильный json для Reassign", zap.Error(err))
+		api.logger.Warn("Wrong json for Reassign", zap.Error(err))
 		c.JSON(http.StatusBadRequest, responses.Error("", "invalid JSON"))
 		return
 	}
 
 	if input.PullRequestID == "" {
-		api.logger.Warn("пустой pull_request_id")
+		api.logger.Warn("Empty pull_request_id")
 		c.JSON(http.StatusBadRequest, responses.Error("", "pull_request_id is required"))
 		return
 	}
 
 	if input.OldUserID == "" {
-		api.logger.Warn("пустой old_user_id")
+		api.logger.Warn("Empty old_user_id")
 		c.JSON(http.StatusBadRequest, responses.Error("", "old_user_id is required"))
 		return
 	}
@@ -152,7 +152,7 @@ func (api *API) Reassign(c *gin.Context) {
 			return
 		}
 
-		api.logger.Error("ошибка reassign reviewer", zap.Error(err))
+		api.logger.Error("Error reassign reviewer", zap.Error(err))
 		c.JSON(http.StatusInternalServerError,
 			responses.Error("", "internal server error"),
 		)

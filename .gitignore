@@ -10,3 +10,10 @@ bin/
 *.dll
 *.so
 *.dylib
+
+coverage.out
+
+mock_PullRequests.go
+mock_Reviewers.go
+mock_Teams.go
+mock_Users.go

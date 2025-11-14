@@ -11,15 +11,15 @@ output:
 
 linters:
   enable:
-    - errcheck      # Проверка необработанных ошибок
-    - govet         # Стандартный go vet
-    - ineffassign   # Неиспользуемые присваивания
-    - staticcheck   # Статический анализ
-    - unused        # Неиспользуемый код
-    - misspell      # Опечатки
-    - revive        # Линтер для стиля кода
-    - gosec         # Проверка безопасности
-    - bodyclose     # Закрытие HTTP body
+    - errcheck
+    - govet
+    - ineffassign
+    - staticcheck
+    - unused
+    - misspell
+    - revive
+    - gosec
+    - bodyclose
 
 linters-settings:
   errcheck:
@@ -41,7 +41,7 @@ linters-settings:
 
   gosec:
     excludes:
-      - G404  # Use of weak random number generator (math/rand)
+      - G404
 
 issues:
   exclude-dirs:
@@ -50,17 +50,14 @@ issues:
     - bin
 
   exclude-rules:
-    # Исключаем файлы миграций
     - path: db/scripts
       linters:
         - all
 
-    # Исключаем моки
     - path: mocks/
       linters:
         - all
 
-    # Исключаем тесты от некоторых линтеров
     - path: _test\.go
       linters:
         - errcheck

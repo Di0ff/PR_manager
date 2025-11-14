@@ -23,7 +23,7 @@ func New(cfg config.Config) *zap.Logger {
 
 	logger, err := zapCfg.Build(zap.AddCaller())
 	if err != nil {
-		log.Fatalf("Ошибка инициализации логгера: %v", err)
+		log.Fatalf("Error create logger: %v", err)
 	}
 
 	return logger
@@ -38,7 +38,7 @@ func parse(level string) zapcore.Level {
 	case "error":
 		return zapcore.ErrorLevel
 	default:
-		log.Println("Неправильный уровень логирования, используем default: info")
+		log.Println("Wrong level log, use default: info")
 		return zapcore.InfoLevel
 	}
 }

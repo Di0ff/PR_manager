@@ -18,13 +18,13 @@ func New(cfg config.Database, log *zap.Logger) *gorm.DB {
 
 	db, err := gorm.Open(postgres.Open(dsn), &gorm.Config{})
 	if err != nil {
-		log.Panic("Ошибка подключения к бд", zap.Error(err))
+		log.Panic("Error connect database", zap.Error(err))
 		return nil
 	}
 
 	sqlDB, err := db.DB()
 	if err != nil {
-		log.Panic("Ошибка получения sqlDB", zap.Error(err))
+		log.Panic("Error receiving sqlDB", zap.Error(err))
 		return nil
 	}
 

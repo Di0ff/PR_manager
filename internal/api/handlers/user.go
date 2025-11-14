@@ -15,13 +15,13 @@ import (
 func (api *API) SetIsActive(c *gin.Context) {
 	var input dto.SetIsActive
 	if err := c.ShouldBindJSON(&input); err != nil {
-		api.logger.Warn("неправильный json для SetIsActive", zap.Error(err))
+		api.logger.Warn("Wrong json for SetIsActive", zap.Error(err))
 		c.JSON(http.StatusBadRequest, responses.Error("", "invalid JSON"))
 		return
 	}
 
 	if input.UserID == "" {
-		api.logger.Warn("пустой user_id")
+		api.logger.Warn("Empty user_id")
 		c.JSON(http.StatusBadRequest, responses.Error("", "user_id is required"))
 		return
 	}
@@ -33,7 +33,7 @@ func (api *API) SetIsActive(c *gin.Context) {
 			return
 		}
 
-		api.logger.Error("failed to set is_active", zap.Error(err))
+		api.logger.Error("Failed to set is_active", zap.Error(err))
 		c.JSON(http.StatusInternalServerError, responses.Error("", "internal server error"))
 		return
 	}
@@ -44,7 +44,7 @@ func (api *API) SetIsActive(c *gin.Context) {
 func (api *API) GetReview(c *gin.Context) {
 	userID := c.Query("user_id")
 	if userID == "" {
-		api.logger.Warn("отсутствует user_id для GetReview")
+		api.logger.Warn("Missing user_id for GetReview")
 		c.JSON(http.StatusBadRequest, responses.Error("", "user_id is required"))
 		return
 	}
@@ -56,7 +56,7 @@ func (api *API) GetReview(c *gin.Context) {
 			return
 		}
 
-		api.logger.Error("ошибка получения reviews для user", zap.Error(err))
+		api.logger.Error("Error receiving reviews for user", zap.Error(err))
 		c.JSON(http.StatusInternalServerError, responses.Error("", "internal server error"))
 		return
 	}

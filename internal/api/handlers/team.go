@@ -16,7 +16,7 @@ import (
 func (api *API) AddTeam(c *gin.Context) {
 	var input dto.Team
 	if err := c.ShouldBindJSON(&input); err != nil {
-		api.logger.Warn("неправильный json для AddTeam", zap.Error(err))
+		api.logger.Warn("Wrong json for AddTeam", zap.Error(err))
 		c.JSON(http.StatusBadRequest, responses.Error("", "invalid JSON"))
 		return
 	}
@@ -24,7 +24,7 @@ func (api *API) AddTeam(c *gin.Context) {
 	users := make([]models.Users, 0, len(input.Members))
 	for _, m := range input.Members {
 		if m.UserID == "" {
-			api.logger.Warn("пустой user_id у member")
+			api.logger.Warn("Empty user_id у member")
 			c.JSON(http.StatusBadRequest, responses.Error("", "user_id is required"))
 			return
 		}
@@ -48,7 +48,7 @@ func (api *API) AddTeam(c *gin.Context) {
 			return
 		}
 
-		api.logger.Error("ошибка add team", zap.Error(err))
+		api.logger.Error("Error add team", zap.Error(err))
 		c.JSON(http.StatusInternalServerError, responses.Error("", "internal server error"))
 		return
 	}
@@ -60,7 +60,7 @@ func (api *API) AddTeam(c *gin.Context) {
 func (api *API) GetTeam(c *gin.Context) {
 	name := c.Query("team_name")
 	if name == "" {
-		api.logger.Warn("отсутствует team_name")
+		api.logger.Warn("Missing team_name")
 		c.JSON(http.StatusBadRequest, responses.Error("", "team_name is required"))
 		return
 	}
@@ -74,7 +74,7 @@ func (api *API) GetTeam(c *gin.Context) {
 			return
 		}
 
-		api.logger.Error("ошибка get team", zap.Error(err))
+		api.logger.Error("Error get team", zap.Error(err))
 		c.JSON(http.StatusInternalServerError, responses.Error("", "internal server error"))
 		return
 	}

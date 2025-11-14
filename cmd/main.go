@@ -49,7 +49,7 @@ func main() {
 
 	go func() {
 		if err := srv.ListenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {
-			log.Fatal("Сервис упал", zap.Error(err))
+			log.Fatal("Service down", zap.Error(err))
 		}
 	}()
 
@@ -61,6 +61,6 @@ func main() {
 	defer cancel()
 
 	if err := srv.Shutdown(ctx); err != nil {
-		log.Fatal("Ошибка завершения работы сервиса", zap.Error(err))
+		log.Fatal("Error shootdown service", zap.Error(err))
 	}
 }
